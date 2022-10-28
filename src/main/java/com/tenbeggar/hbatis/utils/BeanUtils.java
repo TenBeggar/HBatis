@@ -1,14 +1,19 @@
 package com.tenbeggar.hbatis.utils;
 
-import com.tenbeggar.hbatis.annotation.HBaseCell;
 import com.tenbeggar.hbatis.annotation.HBaseRowKey;
 import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.CellUtil;
+import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.springframework.core.annotation.AnnotationUtils;
 
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class BeanUtils {
 
@@ -36,10 +41,10 @@ public class BeanUtils {
 
     public static <T> List<T> copyProperties(ResultScanner scanner, Class<T> clazz) {
         List<T> list = new ArrayList<>();
-        if (Objects.nonNull(scanner)) {
+        if (scanner != null) {
             scanner.forEach(e -> list.add(copyProperties(e, clazz)));
+            scanner.close();
         }
-        scanner.close();
         return list;
     }
 
@@ -47,60 +52,73 @@ public class BeanUtils {
         Map<String, Field> map = new HashMap<>();
         for (Field field : clazz.getDeclaredFields()) {
             field.setAccessible(true);
-            String qualifierName;
-            HBaseRowKey rowKey = field.getAnnotation(HBaseRowKey.class);
-            if (Objects.isNull(rowKey)) {
-                HBaseCell cell = field.getAnnotation(HBaseCell.class);
-                if (Objects.isNull(cell)) {
-                    qualifierName = field.getName();
-                } else {
-                    qualifierName = cell.value();
-                }
+            String key;
+            HBaseRowKey hbaseRowKey = AnnotationUtils.findAnnotation(field, HBaseRowKey.class);
+            if (hbaseRowKey == null) {
+                key = EntityUtils.analyQualifierName(field);
             } else {
-                qualifierName = ROW_KEY;
+                key = ROW_KEY;
             }
-            map.put(qualifierName, field);
+            map.put(key, field);
         }
         return map;
     }
 
     private static void toRowKey(Field field, Cell cell, Object obj) throws IllegalAccessException {
-        if (Objects.nonNull(field)) {
-            field.set(obj, toValue(field, Bytes.toString(cell.getRowArray(), cell.getRowOffset(), cell.getRowLength())));
+        if (field != null) {
+            field.set(obj, JavaTypeConverter.externalizable(field, CellUtil.cloneRow(cell)));
         }
     }
 
     private static void toCell(Field field, Cell cell, Object obj) throws IllegalAccessException {
-        if (Objects.nonNull(field)) {
-            field.set(obj, toValue(field, Bytes.toString(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength())));
+        if (field != null) {
+            field.set(obj, JavaTypeConverter.externalizable(field, CellUtil.cloneValue(cell)));
         }
     }
 
-    private static Object toValue(Field field, String value) {
-        Object obj;
-        switch (field.getGenericType().getTypeName()) {
-            case "java.lang.Long":
-                obj = Long.valueOf(value);
-                break;
-            case "java.lang.Integer":
-                obj = Integer.valueOf(value);
-                break;
-            case "java.lang.Double":
-                obj = Double.valueOf(value);
-                break;
-            case "java.lang.Boolean":
-                obj = Boolean.valueOf(value);
-                break;
-            case "java.lang.Short":
-                obj = Short.valueOf(value);
-                break;
-            case "java.lang.Float":
-                obj = Float.valueOf(value);
-                break;
-            default:
-                obj = value;
-                break;
+    public static Put buildPut(Object entity) {
+        Map<String, byte[]> column = new HashMap<>();
+        byte[] rowKey = null;
+        Class<?> clazz = entity.getClass();
+        try {
+            for (Field field : clazz.getDeclaredFields()) {
+                field.setAccessible(true);
+                Object value = field.get(entity);
+                byte[] bytes = JavaTypeConverter.serializable(field, value);
+                HBaseRowKey hbaseRowKey = AnnotationUtils.findAnnotation(field, HBaseRowKey.class);
+                if (hbaseRowKey == null) {
+                    column.put(EntityUtils.analyQualifierName(field), bytes);
+                } else {
+                    rowKey = bytes;
+                }
+            }
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
         }
-        return obj;
+        if (rowKey == null) {
+            throw new IllegalStateException("Please add @HBaseRowKey to the " + clazz.toString() + " field");
+        }
+        Put put = new Put(rowKey);
+        String family = EntityUtils.analyFamilyName(clazz);
+        column.forEach((k, v) -> put.addColumn(Bytes.toBytes(family), Bytes.toBytes(k), v));
+        return put;
+    }
+
+    public static List<Put> buildPuts(Iterable<?> entities) {
+        List<Put> puts = new ArrayList<>();
+        entities.forEach(e -> puts.add(buildPut(e)));
+        return puts;
+    }
+
+    public static byte[] serializableId(Class<?> clazz, Object id) {
+        Field field = EntityUtils.findRowKeyField(clazz);
+        return JavaTypeConverter.serializable(field, id);
+    }
+
+    public static List<byte[]> serializableIds(Class<?> clazz, Iterable<Object> ids) {
+        Field field = EntityUtils.findRowKeyField(clazz);
+        List<byte[]> list = new ArrayList<>();
+        ids.forEach(e -> list.add(JavaTypeConverter.serializable(field, e)));
+        return list;
     }
 }

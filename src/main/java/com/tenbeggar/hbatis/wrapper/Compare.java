@@ -18,9 +18,11 @@ public interface Compare<R, Children> {
 
     Children likeLeft(R column, Object val);
 
+    Children regex(R column, Object val);
+
     Children isNull(R column);
 
-    Children isNotNull(R column);
+    Children notNull(R column);
 
     Children or();
 }

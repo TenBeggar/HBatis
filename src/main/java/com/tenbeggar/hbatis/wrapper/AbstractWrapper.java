@@ -1,17 +1,22 @@
 package com.tenbeggar.hbatis.wrapper;
 
-import com.tenbeggar.hbatis.utils.BeanUtils;
-import com.tenbeggar.hbatis.utils.IPage;
+import com.tenbeggar.hbatis.mapper.HBaseMapper;
+import com.tenbeggar.hbatis.mapper.MapperInvocationHandler;
 import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.client.coprocessor.AggregationClient;
 import org.apache.hadoop.hbase.client.coprocessor.LongColumnInterpreter;
 import org.apache.hadoop.hbase.filter.*;
-import org.apache.hadoop.hbase.util.Bytes;
+import com.tenbeggar.hbatis.utils.BeanUtils;
+import com.tenbeggar.hbatis.utils.IPage;
+import com.tenbeggar.hbatis.utils.Page;
+import com.tenbeggar.hbatis.utils.Pageable;
 
 import java.io.IOException;
+import java.lang.reflect.Proxy;
 import java.util.List;
 import java.util.function.Consumer;
 
-public abstract class AbstractWrapper<T, R, Children extends AbstractWrapper<T, R, Children>> implements Compare<R, Children>, Nested<ChainCompare<R>, Children>, Order<Children>, ChainQuery<T>, Wrapper {
+public abstract class AbstractWrapper<T, R, Children extends AbstractWrapper<T, R, Children>> implements Compare<R, Children>, RowKeyCompare<Children>, Nested<ChainCompare<R>, Children>, Order<Children>, ChainQuery<T>, Wrapper<T> {
 
     private final Children typedThis = (Children) this;
 
@@ -20,9 +25,33 @@ public abstract class AbstractWrapper<T, R, Children extends AbstractWrapper<T, 
     private Scan scan = new Scan();
     private PageFilter pageFilter;
 
-    protected abstract Class<T> getEntityClass();
+    private final HBaseMapper<T> hbaseMapper;
+    private final String family;
+    private final Table table;
+    private final AggregationClient aggregationClient;
+    private final Class<T> entityClass;
+
+    public AbstractWrapper(HBaseMapper<T> hbaseMapper) {
+        this.hbaseMapper = hbaseMapper;
+        this.family = hbaseMapper.getFamily();
+        this.table = hbaseMapper.getTable();
+        this.aggregationClient = hbaseMapper.getAggregationClient();
+        this.entityClass = this.currentEntityClass(hbaseMapper);
+    }
+
 
     protected abstract String columnTo(R column);
+
+
+    public Class<T> currentEntityClass(HBaseMapper<T> hbaseMapper) {
+        MapperInvocationHandler mapperInvocationHandler = (MapperInvocationHandler) Proxy.getInvocationHandler(hbaseMapper);
+        return mapperInvocationHandler.getEntityClass();
+    }
+
+    @Override
+    public HBaseMapper<T> getHBaseMapper() {
+        return hbaseMapper;
+    }
 
     @Override
     public Children eq(R column, Object val) {
@@ -73,20 +102,92 @@ public abstract class AbstractWrapper<T, R, Children extends AbstractWrapper<T, 
     }
 
     @Override
+    public Children regex(R column, Object val) {
+        chainCompare.regex(column, val);
+        return typedThis;
+    }
+
+    @Override
     public Children isNull(R column) {
         chainCompare.isNull(column);
         return typedThis;
     }
 
     @Override
-    public Children isNotNull(R column) {
-        chainCompare.isNotNull(column);
+    public Children notNull(R column) {
+        chainCompare.notNull(column);
         return typedThis;
     }
 
     @Override
     public Children or() {
         chainCompare.or();
+        return typedThis;
+    }
+
+    @Override
+    public Children idEq(Object val) {
+        chainCompare.idEq(val);
+        return typedThis;
+    }
+
+    @Override
+    public Children idNe(Object val) {
+        chainCompare.idNe(val);
+        return typedThis;
+    }
+
+    @Override
+    public Children idGt(Object val) {
+        chainCompare.idGt(val);
+        return typedThis;
+    }
+
+    @Override
+    public Children idGe(Object val) {
+        chainCompare.idGe(val);
+        return typedThis;
+    }
+
+    @Override
+    public Children idLt(Object val) {
+        chainCompare.idLt(val);
+        return typedThis;
+    }
+
+    @Override
+    public Children idLe(Object val) {
+        chainCompare.idLe(val);
+        return typedThis;
+    }
+
+    @Override
+    public Children idLike(Object val) {
+        chainCompare.idLike(val);
+        return typedThis;
+    }
+
+    @Override
+    public Children idLikeLeft(Object val) {
+        chainCompare.idLikeLeft(val);
+        return typedThis;
+    }
+
+    @Override
+    public Children idRegex(Object val) {
+        chainCompare.idRegex(val);
+        return typedThis;
+    }
+
+    @Override
+    public Children idIsNull() {
+        chainCompare.idIsNull();
+        return typedThis;
+    }
+
+    @Override
+    public Children idNotNull() {
+        chainCompare.idNotNull();
         return typedThis;
     }
 
@@ -119,7 +220,7 @@ public abstract class AbstractWrapper<T, R, Children extends AbstractWrapper<T, 
     @Override
     public Children startId(Object id) {
         if (id != null) {
-            scan.withStartRow(Bytes.toBytes(id.toString()), false);
+            scan.withStartRow(BeanUtils.serializableId(entityClass, id), false);
         }
         return typedThis;
     }
@@ -132,12 +233,12 @@ public abstract class AbstractWrapper<T, R, Children extends AbstractWrapper<T, 
 
     @Override
     public T getById(Object id) {
-        Get get = new Get(Bytes.toBytes(id.toString()));
+        Get get = new Get(BeanUtils.serializableId(entityClass, id));
         try {
-            Result result = getTable().get(get);
-            return BeanUtils.copyProperties(result, getEntityClass());
+            Result result = table.get(get);
+            return BeanUtils.copyProperties(result, entityClass);
         } catch (IOException e) {
-            throw new RuntimeException(e.getMessage());
+            throw new RuntimeException(e);
         }
     }
 
@@ -153,26 +254,21 @@ public abstract class AbstractWrapper<T, R, Children extends AbstractWrapper<T, 
         }
         scan.setFilter(filter);
         try {
-            ResultScanner scanner = getTable().getScanner(scan);
-            return BeanUtils.copyProperties(scanner, getEntityClass());
+            ResultScanner scanner = table.getScanner(scan);
+            return BeanUtils.copyProperties(scanner, entityClass);
         } catch (IOException e) {
-            throw new RuntimeException(e.getMessage());
+            throw new RuntimeException(e);
         }
     }
 
     @Override
     public long count() {
         Filter filter = chainCompare.build();
-        if (filter == null) {
-            filter = new FirstKeyOnlyFilter();
-        } else {
-            filter = new FilterList(new FirstKeyOnlyFilter(), filter);
-        }
         scan.setFilter(filter);
         try {
-            return getAggregationClient().rowCount(getTable(), new LongColumnInterpreter(), scan);
+            return aggregationClient.rowCount(table, new LongColumnInterpreter(), scan);
         } catch (Throwable e) {
-            throw new RuntimeException(e.getMessage());
+            throw new RuntimeException(e);
         }
     }
 
@@ -190,7 +286,7 @@ public abstract class AbstractWrapper<T, R, Children extends AbstractWrapper<T, 
 
         @Override
         protected String getFamily() {
-            return AbstractWrapper.this.getFamily();
+            return family;
         }
 
         @Override

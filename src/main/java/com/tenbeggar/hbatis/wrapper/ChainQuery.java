@@ -1,5 +1,8 @@
 package com.tenbeggar.hbatis.wrapper;
 
+import com.tenbeggar.hbatis.utils.Page;
+import com.tenbeggar.hbatis.utils.Pageable;
+
 import java.util.List;
 
 public interface ChainQuery<T> {

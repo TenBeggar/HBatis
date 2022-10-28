@@ -1,7 +1,7 @@
 package com.tenbeggar.hbatis.mapper;
 
-import com.tenbeggar.hbatis.wrapper.QueryWrapper;
 import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.client.coprocessor.AggregationClient;
 
 public interface HBaseMapper<T> {
 
@@ -11,5 +11,13 @@ public interface HBaseMapper<T> {
 
     Table getTable();
 
-    QueryWrapper<T> queryWrapper();
+    AggregationClient getAggregationClient();
+
+    void save(T entity);
+
+    void saveAll(Iterable<T> entities);
+
+    void deleteById(Object id);
+
+    void deleteByIds(Iterable<Object> ids);
 }

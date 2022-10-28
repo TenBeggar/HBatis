@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-public abstract class ChainCompare<R> implements Compare<R, ChainCompare<R>>, Nested<ChainCompare<R>, ChainCompare<R>> {
+public abstract class ChainCompare<R> implements Compare<R, ChainCompare<R>>, RowKeyCompare<ChainCompare<R>>, Nested<ChainCompare<R>, ChainCompare<R>> {
 
     private List<Filter> filters = new ArrayList<>();
     private List<Integer> orIndex = new ArrayList<>();
@@ -43,7 +43,7 @@ public abstract class ChainCompare<R> implements Compare<R, ChainCompare<R>>, Ne
 
     @Override
     public ChainCompare<R> lt(R column, Object val) {
-        filters.add(new SingleColumnValueFilter(Bytes.toBytes(getFamily()), Bytes.toBytes(columnTo(column)), CompareOperator.LESS_OR_EQUAL, Bytes.toBytes(val.toString())));
+        filters.add(new SingleColumnValueFilter(Bytes.toBytes(getFamily()), Bytes.toBytes(columnTo(column)), CompareOperator.LESS, Bytes.toBytes(val.toString())));
         return this;
     }
 
@@ -66,13 +66,19 @@ public abstract class ChainCompare<R> implements Compare<R, ChainCompare<R>>, Ne
     }
 
     @Override
+    public ChainCompare<R> regex(R column, Object val) {
+        filters.add(new SingleColumnValueFilter(Bytes.toBytes(getFamily()), Bytes.toBytes(columnTo(column)), CompareOperator.EQUAL, new RegexStringComparator(val.toString())));
+        return this;
+    }
+
+    @Override
     public ChainCompare<R> isNull(R column) {
         filters.add(new SingleColumnValueFilter(Bytes.toBytes(getFamily()), Bytes.toBytes(columnTo(column)), CompareOperator.EQUAL, new NullComparator()));
         return this;
     }
 
     @Override
-    public ChainCompare<R> isNotNull(R column) {
+    public ChainCompare<R> notNull(R column) {
         filters.add(new SingleColumnValueFilter(Bytes.toBytes(getFamily()), Bytes.toBytes(columnTo(column)), CompareOperator.NOT_EQUAL, new NullComparator()));
         return this;
     }
@@ -80,6 +86,72 @@ public abstract class ChainCompare<R> implements Compare<R, ChainCompare<R>>, Ne
     @Override
     public ChainCompare<R> or() {
         orIndex.add(filters.size());
+        return this;
+    }
+
+    @Override
+    public ChainCompare<R> idEq(Object val) {
+        filters.add(new RowFilter(CompareOperator.EQUAL, new BinaryComparator(Bytes.toBytes(val.toString()))));
+        return this;
+    }
+
+    @Override
+    public ChainCompare<R> idNe(Object val) {
+        filters.add(new RowFilter(CompareOperator.NOT_EQUAL, new BinaryComparator(Bytes.toBytes(val.toString()))));
+        return this;
+    }
+
+    @Override
+    public ChainCompare<R> idGt(Object val) {
+        filters.add(new RowFilter(CompareOperator.GREATER, new BinaryComparator(Bytes.toBytes(val.toString()))));
+        return this;
+    }
+
+    @Override
+    public ChainCompare<R> idGe(Object val) {
+        filters.add(new RowFilter(CompareOperator.GREATER_OR_EQUAL, new BinaryComparator(Bytes.toBytes(val.toString()))));
+        return this;
+    }
+
+    @Override
+    public ChainCompare<R> idLt(Object val) {
+        filters.add(new RowFilter(CompareOperator.LESS, new BinaryComparator(Bytes.toBytes(val.toString()))));
+        return this;
+    }
+
+    @Override
+    public ChainCompare<R> idLe(Object val) {
+        filters.add(new RowFilter(CompareOperator.LESS_OR_EQUAL, new BinaryComparator(Bytes.toBytes(val.toString()))));
+        return this;
+    }
+
+    @Override
+    public ChainCompare<R> idLike(Object val) {
+        filters.add(new RowFilter(CompareOperator.EQUAL, new SubstringComparator(val.toString())));
+        return this;
+    }
+
+    @Override
+    public ChainCompare<R> idLikeLeft(Object val) {
+        filters.add(new RowFilter(CompareOperator.EQUAL, new BinaryPrefixComparator(Bytes.toBytes(val.toString()))));
+        return this;
+    }
+
+    @Override
+    public ChainCompare<R> idRegex(Object val) {
+        filters.add(new RowFilter(CompareOperator.EQUAL, new RegexStringComparator(val.toString())));
+        return this;
+    }
+
+    @Override
+    public ChainCompare<R> idIsNull() {
+        filters.add(new RowFilter(CompareOperator.EQUAL, new NullComparator()));
+        return this;
+    }
+
+    @Override
+    public ChainCompare<R> idNotNull() {
+        filters.add(new RowFilter(CompareOperator.NOT_EQUAL, new NullComparator()));
         return this;
     }
 

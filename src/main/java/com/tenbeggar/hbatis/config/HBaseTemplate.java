@@ -1,4 +1,4 @@
-package com.tenbeggar.hbatis;
+package com.tenbeggar.hbatis.config;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -6,15 +6,18 @@ import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.coprocessor.AggregationClient;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.io.IOException;
 
+@Import(HBaseProperties.class)
 public class HBaseTemplate {
 
-    private String zookeeperQuorum;
-    private String clientPort;
-    private String znodeParent;
+    @Autowired
+    private HBaseProperties hbaseProperties;
 
     private Configuration configuration;
     private Connection connection;
@@ -24,21 +27,19 @@ public class HBaseTemplate {
     public HBaseTemplate() {
     }
 
-    public HBaseTemplate(String zookeeperQuorum, String clientPort, String znodeParent) {
-        this.zookeeperQuorum = zookeeperQuorum;
-        this.clientPort = clientPort;
-        this.znodeParent = znodeParent;
-        this.configuration = this.configuration(this.zookeeperQuorum, this.clientPort, this.znodeParent);
+    @PostConstruct
+    public void init() {
+        this.configuration = this.configuration(this.hbaseProperties);
         this.connection = this.connection(this.configuration);
         this.aggregationClient = this.aggregationClient(this.configuration);
         this.admin = this.admin(this.connection);
     }
 
-    public Configuration configuration(String zookeeperQuorum, String clientPort, String znodeParent) {
+    public Configuration configuration(HBaseProperties hbaseProperties) {
         Configuration configuration = HBaseConfiguration.create();
-        configuration.set("hbase.zookeeper.quorum", zookeeperQuorum);
-        configuration.set("hbase.zookeeper.property.clientPort", clientPort);
-        configuration.set("zookeeper.znode.parent", znodeParent);
+        configuration.set("hbase.zookeeper.quorum", hbaseProperties.getZookeeperQuorum());
+        configuration.set("hbase.zookeeper.property.clientPort", hbaseProperties.getClientPort());
+        configuration.set("zookeeper.znode.parent", hbaseProperties.getZnodeParent());
         return configuration;
     }
 
@@ -73,28 +74,12 @@ public class HBaseTemplate {
         }
     }
 
-    public String getZookeeperQuorum() {
-        return zookeeperQuorum;
+    public HBaseProperties getHbaseProperties() {
+        return hbaseProperties;
     }
 
-    public void setZookeeperQuorum(String zookeeperQuorum) {
-        this.zookeeperQuorum = zookeeperQuorum;
-    }
-
-    public String getClientPort() {
-        return clientPort;
-    }
-
-    public void setClientPort(String clientPort) {
-        this.clientPort = clientPort;
-    }
-
-    public String getZnodeParent() {
-        return znodeParent;
-    }
-
-    public void setZnodeParent(String znodeParent) {
-        this.znodeParent = znodeParent;
+    public void setHbaseProperties(HBaseProperties hbaseProperties) {
+        this.hbaseProperties = hbaseProperties;
     }
 
     public Configuration getConfiguration() {

@@ -1,7 +1,5 @@
 package com.tenbeggar.hbatis.utils;
 
-import com.tenbeggar.hbatis.wrapper.Pageable;
-
 public class IPageable implements Pageable {
 
     private Object startId;
@@ -33,8 +31,8 @@ public class IPageable implements Pageable {
         this.pageSize = pageSize;
     }
 
-    public static IPageable.IPageableBuilder builder() {
-        return new IPageable.IPageableBuilder();
+    public static IPageableBuilder builder() {
+        return new IPageableBuilder();
     }
 
     public static class IPageableBuilder {
@@ -44,12 +42,12 @@ public class IPageable implements Pageable {
         IPageableBuilder() {
         }
 
-        public IPageable.IPageableBuilder startId(final Object startId) {
+        public IPageableBuilder startId(final Object startId) {
             this.startId = startId;
             return this;
         }
 
-        public IPageable.IPageableBuilder pageSize(final Long pageSize) {
+        public IPageableBuilder pageSize(final Long pageSize) {
             this.pageSize = pageSize;
             return this;
         }

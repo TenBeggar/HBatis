@@ -1,55 +1,37 @@
 package com.tenbeggar.hbatis.mapper;
 
-import com.tenbeggar.hbatis.HBaseTemplate;
-import com.tenbeggar.hbatis.annotation.HBaseTable;
-import com.tenbeggar.hbatis.wrapper.QueryWrapper;
+import com.tenbeggar.hbatis.config.HBaseTemplate;
+import com.tenbeggar.hbatis.utils.BeanUtils;
+import com.tenbeggar.hbatis.utils.EntityUtils;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.client.coprocessor.AggregationClient;
 import org.apache.hadoop.hbase.coprocessor.AggregateImplementation;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.springframework.core.annotation.AnnotationUtils;
 
 import javax.annotation.PreDestroy;
 import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class HBaseDefaultMapper<T> implements HBaseMapper<T> {
 
     private final HBaseTemplate hbaseTemplate;
     private final Class<T> entityClass;
-    private final Table table;
-    private final AggregationClient aggregationClient;
 
     private final String tableName;
     private final String family;
 
+    private final Table table;
+    private final AggregationClient aggregationClient;
+
     public HBaseDefaultMapper(HBaseTemplate hbaseTemplate, Class<T> entityClass) {
         this.hbaseTemplate = hbaseTemplate;
         this.entityClass = entityClass;
-        this.tableName = this.analyTableName(this.entityClass);
-        this.family = this.analyFamily(this.entityClass);
+        this.tableName = EntityUtils.analyTableName(this.entityClass);
+        this.family = EntityUtils.analyFamilyName(this.entityClass);
         this.table = this.buildTable(this.hbaseTemplate.getConnection(), this.tableName);
-        this.aggregationClient = this.setAggregate(this.hbaseTemplate, this.tableName, family);
-    }
-
-    private String analyTableName(Class<T> entityClass) {
-        boolean isPresent = entityClass.isAnnotationPresent(HBaseTable.class);
-        if (isPresent) {
-            HBaseTable hbaseTable = AnnotationUtils.findAnnotation(entityClass, HBaseTable.class);
-            return hbaseTable.name();
-        } else {
-            throw new IllegalStateException("Please add @HBaseTable to" + entityClass.toString());
-        }
-    }
-
-    private String analyFamily(Class<T> entityClass) {
-        boolean isPresent = entityClass.isAnnotationPresent(HBaseTable.class);
-        if (isPresent) {
-            HBaseTable hbaseTable = AnnotationUtils.findAnnotation(entityClass, HBaseTable.class);
-            return hbaseTable.family();
-        } else {
-            throw new IllegalStateException("Please add @HBaseTable to" + entityClass.toString());
-        }
+        this.aggregationClient = this.alterAggregate(this.hbaseTemplate, this.tableName, family);
     }
 
     private Table buildTable(Connection connection, String tableName) {
@@ -83,13 +65,49 @@ public class HBaseDefaultMapper<T> implements HBaseMapper<T> {
         return this.table;
     }
 
+    @Override
     public AggregationClient getAggregationClient() {
         return aggregationClient;
     }
 
     @Override
-    public QueryWrapper<T> queryWrapper() {
-        return new QueryWrapper<>(getTable(), getEntityClass(), getFamily(), getAggregationClient());
+    public void save(T entity) {
+        Put put = BeanUtils.buildPut(entity);
+        try {
+            getTable().put(put);
+        } catch (IOException e) {
+            throw new RuntimeException("HBase '" + tableName + "' save fail. Entity = " + entity);
+        }
+    }
+
+    @Override
+    public void saveAll(Iterable<T> entities) {
+        List<Put> puts = BeanUtils.buildPuts(entities);
+        try {
+            getTable().put(puts);
+        } catch (IOException e) {
+            throw new RuntimeException("HBase '" + tableName + "' batch save fail. Entities = " + entities);
+        }
+    }
+
+    @Override
+    public void deleteById(Object id) {
+        Delete delete = new Delete(BeanUtils.serializableId(entityClass, id));
+        try {
+            getTable().delete(delete);
+        } catch (IOException e) {
+            throw new RuntimeException("HBase '" + tableName + "' delete fail. id = " + id);
+        }
+    }
+
+    @Override
+    public void deleteByIds(Iterable<Object> ids) {
+        List<Delete> deletes = BeanUtils.serializableIds(entityClass, ids).stream().map(Delete::new).collect(Collectors.toList());
+        try {
+            getTable().delete(deletes);
+        } catch (IOException e) {
+            throw new RuntimeException("HBase '" + tableName + "' batch delete fail. ids = " + deletes);
+        }
     }
 
     @PreDestroy
@@ -97,7 +115,7 @@ public class HBaseDefaultMapper<T> implements HBaseMapper<T> {
         getTable().close();
     }
 
-    private AggregationClient setAggregate(HBaseTemplate hbaseTemplate, String tableName, String family) {
+    private AggregationClient alterAggregate(HBaseTemplate hbaseTemplate, String tableName, String family) {
         Admin admin = hbaseTemplate.getAdmin();
         AggregationClient aggregationClient = hbaseTemplate.getAggregationClient();
         TableName name = TableName.valueOf(tableName);

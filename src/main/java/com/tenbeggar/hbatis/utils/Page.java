@@ -1,4 +1,4 @@
-package com.tenbeggar.hbatis.wrapper;
+package com.tenbeggar.hbatis.utils;
 
 import java.util.List;
 

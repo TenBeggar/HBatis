@@ -1,7 +1,6 @@
 package com.tenbeggar.hbatis.mapper;
 
-import com.tenbeggar.hbatis.HBaseTemplate;
-import com.tenbeggar.hbatis.annotation.Mapper;
+import com.tenbeggar.hbatis.config.HBaseTemplate;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
@@ -30,7 +29,7 @@ public class MapperScannerConfigurer implements BeanDefinitionRegistryPostProces
     @Override
     public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry beanDefinitionRegistry) throws BeansException {
         ClassPathMapperScanner classPathMapperScanner = new ClassPathMapperScanner(beanDefinitionRegistry);
-        classPathMapperScanner.includeFilter(Mapper.class);
+        classPathMapperScanner.includeFilter(HBaseMapper.class);
         Set<BeanDefinitionHolder> beanDefinitionHolders = classPathMapperScanner.doScan(getBasePackages());
         beanDefinitionHolders.forEach(e -> {
             GenericBeanDefinition genericBeanDefinition = (GenericBeanDefinition) e.getBeanDefinition();

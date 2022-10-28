@@ -1,5 +1,7 @@
 package com.tenbeggar.hbatis.annotation;
 
+import org.springframework.core.annotation.AliasFor;
+
 import java.lang.annotation.*;
 
 @Target({ElementType.FIELD})
@@ -7,5 +9,9 @@ import java.lang.annotation.*;
 @Documented
 public @interface HBaseCell {
 
-    String value();
+    @AliasFor("name")
+    String value() default "";
+
+    @AliasFor("value")
+    String name() default "";
 }

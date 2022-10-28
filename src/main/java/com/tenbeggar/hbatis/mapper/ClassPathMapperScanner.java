@@ -5,9 +5,8 @@ import org.springframework.beans.factory.config.BeanDefinitionHolder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.context.annotation.ClassPathBeanDefinitionScanner;
 import org.springframework.core.type.AnnotationMetadata;
-import org.springframework.core.type.filter.AnnotationTypeFilter;
+import org.springframework.core.type.filter.AssignableTypeFilter;
 
-import java.lang.annotation.Annotation;
 import java.util.Set;
 
 public class ClassPathMapperScanner extends ClassPathBeanDefinitionScanner {
@@ -27,7 +26,7 @@ public class ClassPathMapperScanner extends ClassPathBeanDefinitionScanner {
         return metadata.isInterface() && metadata.isIndependent();
     }
 
-    public void includeFilter(Class<? extends Annotation> annotationType) {
-        addIncludeFilter(new AnnotationTypeFilter(annotationType));
+    public void includeFilter(Class<?> targetType) {
+        addIncludeFilter(new AssignableTypeFilter(targetType));
     }
 }

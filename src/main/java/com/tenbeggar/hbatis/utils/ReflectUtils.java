@@ -2,7 +2,6 @@ package com.tenbeggar.hbatis.utils;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.Objects;
 
 public class ReflectUtils {
 
@@ -31,7 +30,7 @@ public class ReflectUtils {
                 targetInterface = pt;
             }
         }
-        if (Objects.isNull(targetInterface)) {
+        if (targetInterface == null) {
             throw new IllegalStateException("Not find target interface.");
         }
         Type[] actualTypeArguments = targetInterface.getActualTypeArguments();

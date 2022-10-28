@@ -1,4 +1,4 @@
-package com.tenbeggar.hbatis.wrapper;
+package com.tenbeggar.hbatis.utils;
 
 public interface Pageable {
 

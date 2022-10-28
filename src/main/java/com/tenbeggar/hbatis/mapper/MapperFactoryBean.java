@@ -1,6 +1,6 @@
 package com.tenbeggar.hbatis.mapper;
 
-import com.tenbeggar.hbatis.HBaseTemplate;
+import com.tenbeggar.hbatis.config.HBaseTemplate;
 import com.tenbeggar.hbatis.utils.ReflectUtils;
 import org.springframework.beans.factory.FactoryBean;
 
@@ -12,6 +12,8 @@ public class MapperFactoryBean<T> implements FactoryBean<T> {
     private Class<T> interfaceClass;
     private static final String hbaseTemplateName = "hbaseTemplate";
     private HBaseTemplate hbaseTemplate;
+
+    private Class<T> entityClass;
 
     public static String getInterfaceClassName() {
         return interfaceClassName;
@@ -37,14 +39,21 @@ public class MapperFactoryBean<T> implements FactoryBean<T> {
         this.interfaceClass = interfaceClass;
     }
 
+    public Class<T> getEntityClass() {
+        return entityClass;
+    }
+
+    public void setEntityClass(Class<T> entityClass) {
+        this.entityClass = entityClass;
+    }
+
     @Override
     public T getObject() {
-        Class<?> entity = ReflectUtils.getInterfaceT(getInterfaceClass(), HBaseMapper.class, 0);
+        setEntityClass(ReflectUtils.getInterfaceT(getInterfaceClass(), HBaseMapper.class, 0));
         return (T) Proxy.newProxyInstance(
                 interfaceClass.getClassLoader(),
                 new Class[]{interfaceClass},
-                (proxy, method, args) -> method.invoke(new HBaseDefaultMapper(getHbaseTemplate(), entity), args)
-        );
+                new MapperInvocationHandler<>(getHbaseTemplate(), getEntityClass()));
     }
 
     @Override

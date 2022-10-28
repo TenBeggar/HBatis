@@ -4,34 +4,47 @@
 
 HBatis 是一个 HBase Client 的增强工具，致力于使用简单，性能强悍。
 
-## 快速入门
+## 快速开始
 
-1. 配置 HBaseTemplate
+1. 引入 maven 依赖
+
+```xml
+<dependency>
+    <groupId>org.tenbeggar</groupId>
+    <artifactId>hbatis</artifactId>
+    <version>2.4.12</version>
+</dependency>
+```
+
+2. 添加 application.yaml 配置
+
+```yaml
+hbase:
+  zookeeper:
+    quorum: localhost
+    property:
+      clientPort: 2181
+    znode:
+      parent: /hbase
+```
+
+3. 添加 @EnableHBatis 启动类 和 @MapperScan 包路径扫描
 
 ```java
-
 @MapperScan("com.test.mapper")
-@Configuration
-public class HBaseConfig {
+@EnableHBatis
+@SpringBootApplication
+public class Application {
 
-    @Value("${hbase.zookeeper.quorum}")
-    private String zookeeperQuorum;
-    @Value("${hbase.zookeeper.property.clientPort}")
-    private String clientPort;
-    @Value("${zookeeper.znode.parent}")
-    private String znodeParent;
-
-    @Bean
-    public HBaseTemplate hbaseTemplate() {
-        return new HBaseTemplate(zookeeperQuorum, clientPort, znodeParent);
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
     }
 }
 ```
 
-2. 创建实体类
+## Entity
 
 ```java
-
 @HBaseTable(name = "user", family = "info")
 @Data
 public class User {
@@ -42,36 +55,31 @@ public class User {
     private String username;
     private Integer age;
     private String sex;
+    private LocalDateTime birthday;
 }
 ```
 
-3. 构建 Mapper
+## Mapper
 
 ```java
+package com.test.mapper;
 
-@Mapper
 public interface UserMapper extends HBaseMapper<User> {
 }
 ```
 
-4. 使用示例
+## Service
 
 ```java
+@Service
+public class UserService extends HBaseAbstractService<UserMapper, User> {
 
-@SpringBootTest
-class ApplicationTests {
-
-    @Autowired
-    private UserMapper userMapper;
-
-    //分页查询 年龄大于30 或者 姓张的男性
-    @Test
-    public void test() {
-        Page<User> page = userMapper.queryWrapper()
-                .gt("age", 30)
-                .or(e -> e.likeLeft("name", "张").eq("age", "M"))
-                .page(IPageable.builder().startId(0).pageSize(10L).build());
-        System.out.println(page);
+    //条件查询 年龄大于30 或者 姓张的男性
+    public List<User> list() {
+        return lambdaQueryWrapper()
+                .gt(User::getAge, 30)
+                .or(e -> e.likeLeft(User::getUsername, "张").eq(User::getSex, "M"))
+                .list();
     }
 }
 ```
@@ -82,10 +90,10 @@ class ApplicationTests {
 
 ## 后续规划
 
-1. 支持 RowKey 条件查询
+1. 支持枚举
 
-2. 支持 PUT 写入数据
+2. socket 链接池
 
-3. 支持 Lambda 表达式
+3. 支持缓存
 
 4. 支持拦截器

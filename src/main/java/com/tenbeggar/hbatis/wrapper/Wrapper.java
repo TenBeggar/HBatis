@@ -1,13 +1,8 @@
 package com.tenbeggar.hbatis.wrapper;
 
-import org.apache.hadoop.hbase.client.Table;
-import org.apache.hadoop.hbase.client.coprocessor.AggregationClient;
+import com.tenbeggar.hbatis.mapper.HBaseMapper;
 
-public interface Wrapper {
+public interface Wrapper<T> {
 
-    String getFamily();
-
-    Table getTable();
-
-    AggregationClient getAggregationClient();
+    HBaseMapper<T> getHBaseMapper();
 }

@@ -1,7 +1,5 @@
 package com.tenbeggar.hbatis.utils;
 
-import com.tenbeggar.hbatis.wrapper.Page;
-
 import java.util.List;
 
 public class IPage<T> implements Page<T> {

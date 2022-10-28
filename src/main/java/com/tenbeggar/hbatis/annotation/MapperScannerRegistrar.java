@@ -8,14 +8,12 @@ import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.type.AnnotationMetadata;
 
-import java.util.*;
-
 public class MapperScannerRegistrar implements ImportBeanDefinitionRegistrar {
 
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
         AnnotationAttributes annotationAttributes = AnnotationAttributes.fromMap(importingClassMetadata.getAnnotationAttributes(MapperScan.class.getCanonicalName()));
-        if (Objects.nonNull(annotationAttributes)) {
+        if (annotationAttributes != null) {
             BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder.genericBeanDefinition(MapperScannerConfigurer.class);
             String[] basePackages = annotationAttributes.getStringArray("basePackages");
             beanDefinitionBuilder.addPropertyValue(MapperScannerConfigurer.getBasePackagesName(), basePackages);
