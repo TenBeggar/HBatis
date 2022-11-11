@@ -9,7 +9,7 @@ public class StringType implements JavaType<String> {
 
     @Override
     public boolean match(Field field) {
-        return String.class.getTypeName().contentEquals(field.getGenericType().getTypeName());
+        return String.class.getTypeName().equals(field.getGenericType().getTypeName());
     }
 
     @Override

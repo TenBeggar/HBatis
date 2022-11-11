@@ -9,7 +9,7 @@ public class FloatType implements JavaType<Float> {
 
     @Override
     public boolean match(Field field) {
-        return Float.class.getTypeName().contentEquals(field.getGenericType().getTypeName());
+        return Float.class.getTypeName().equals(field.getGenericType().getTypeName());
     }
 
     @Override

@@ -1,9 +1,12 @@
 package com.tenbeggar.hbatis.wrapper;
 
+import com.tenbeggar.hbatis.utils.BeanUtils;
+import com.tenbeggar.hbatis.utils.EntityUtils;
 import org.apache.hadoop.hbase.CompareOperator;
 import org.apache.hadoop.hbase.filter.*;
 import org.apache.hadoop.hbase.util.Bytes;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -15,71 +18,80 @@ public abstract class ChainCompare<R> implements Compare<R, ChainCompare<R>>, Ro
 
     protected abstract String getFamily();
 
-    protected abstract String columnTo(R column);
+    protected abstract Field columnTo(R column);
 
     @Override
     public ChainCompare<R> eq(R column, Object val) {
-        filters.add(new SingleColumnValueFilter(Bytes.toBytes(getFamily()), Bytes.toBytes(columnTo(column)), CompareOperator.EQUAL, Bytes.toBytes(val.toString())));
+        Field field = columnTo(column);
+        filters.add(new SingleColumnValueFilter(Bytes.toBytes(getFamily()), Bytes.toBytes(EntityUtils.analyQualifierName(field)), CompareOperator.EQUAL, BeanUtils.serializable(field, val)));
         return this;
     }
 
     @Override
     public ChainCompare<R> ne(R column, Object val) {
-        filters.add(new SingleColumnValueFilter(Bytes.toBytes(getFamily()), Bytes.toBytes(columnTo(column)), CompareOperator.NOT_EQUAL, Bytes.toBytes(val.toString())));
+        Field field = columnTo(column);
+        filters.add(new SingleColumnValueFilter(Bytes.toBytes(getFamily()), Bytes.toBytes(EntityUtils.analyQualifierName(field)), CompareOperator.NOT_EQUAL, BeanUtils.serializable(field, val)));
         return this;
     }
 
     @Override
     public ChainCompare<R> gt(R column, Object val) {
-        filters.add(new SingleColumnValueFilter(Bytes.toBytes(getFamily()), Bytes.toBytes(columnTo(column)), CompareOperator.GREATER, Bytes.toBytes(val.toString())));
+        Field field = columnTo(column);
+        filters.add(new SingleColumnValueFilter(Bytes.toBytes(getFamily()), Bytes.toBytes(EntityUtils.analyQualifierName(field)), CompareOperator.GREATER, BeanUtils.serializable(field, val)));
         return this;
     }
 
     @Override
     public ChainCompare<R> ge(R column, Object val) {
-        filters.add(new SingleColumnValueFilter(Bytes.toBytes(getFamily()), Bytes.toBytes(columnTo(column)), CompareOperator.GREATER_OR_EQUAL, Bytes.toBytes(val.toString())));
+        Field field = columnTo(column);
+        filters.add(new SingleColumnValueFilter(Bytes.toBytes(getFamily()), Bytes.toBytes(EntityUtils.analyQualifierName(field)), CompareOperator.GREATER_OR_EQUAL, BeanUtils.serializable(field, val)));
         return this;
     }
 
     @Override
     public ChainCompare<R> lt(R column, Object val) {
-        filters.add(new SingleColumnValueFilter(Bytes.toBytes(getFamily()), Bytes.toBytes(columnTo(column)), CompareOperator.LESS, Bytes.toBytes(val.toString())));
+        Field field = columnTo(column);
+        filters.add(new SingleColumnValueFilter(Bytes.toBytes(getFamily()), Bytes.toBytes(EntityUtils.analyQualifierName(field)), CompareOperator.LESS, BeanUtils.serializable(field, val)));
         return this;
     }
 
     @Override
     public ChainCompare<R> le(R column, Object val) {
-        filters.add(new SingleColumnValueFilter(Bytes.toBytes(getFamily()), Bytes.toBytes(columnTo(column)), CompareOperator.LESS_OR_EQUAL, Bytes.toBytes(val.toString())));
+        Field field = columnTo(column);
+        filters.add(new SingleColumnValueFilter(Bytes.toBytes(getFamily()), Bytes.toBytes(EntityUtils.analyQualifierName(field)), CompareOperator.LESS_OR_EQUAL, BeanUtils.serializable(field, val)));
         return this;
     }
 
     @Override
     public ChainCompare<R> like(R column, Object val) {
-        filters.add(new SingleColumnValueFilter(Bytes.toBytes(getFamily()), Bytes.toBytes(columnTo(column)), CompareOperator.EQUAL, new SubstringComparator(val.toString())));
+        Field field = columnTo(column);
+        filters.add(new SingleColumnValueFilter(Bytes.toBytes(getFamily()), Bytes.toBytes(EntityUtils.analyQualifierName(field)), CompareOperator.EQUAL, new SubstringComparator(Bytes.toString(BeanUtils.serializable(field, val)))));
         return this;
     }
 
     @Override
     public ChainCompare<R> likeLeft(R column, Object val) {
-        filters.add(new SingleColumnValueFilter(Bytes.toBytes(getFamily()), Bytes.toBytes(columnTo(column)), CompareOperator.EQUAL, new BinaryPrefixComparator(Bytes.toBytes(val.toString()))));
+        Field field = columnTo(column);
+        filters.add(new SingleColumnValueFilter(Bytes.toBytes(getFamily()), Bytes.toBytes(EntityUtils.analyQualifierName(field)), CompareOperator.EQUAL, new BinaryPrefixComparator(BeanUtils.serializable(field, val))));
         return this;
     }
 
     @Override
     public ChainCompare<R> regex(R column, Object val) {
-        filters.add(new SingleColumnValueFilter(Bytes.toBytes(getFamily()), Bytes.toBytes(columnTo(column)), CompareOperator.EQUAL, new RegexStringComparator(val.toString())));
+        Field field = columnTo(column);
+        filters.add(new SingleColumnValueFilter(Bytes.toBytes(getFamily()), Bytes.toBytes(EntityUtils.analyQualifierName(field)), CompareOperator.EQUAL, new RegexStringComparator(Bytes.toString(BeanUtils.serializable(field, val)))));
         return this;
     }
 
     @Override
     public ChainCompare<R> isNull(R column) {
-        filters.add(new SingleColumnValueFilter(Bytes.toBytes(getFamily()), Bytes.toBytes(columnTo(column)), CompareOperator.EQUAL, new NullComparator()));
+        filters.add(new SingleColumnValueFilter(Bytes.toBytes(getFamily()), Bytes.toBytes(EntityUtils.analyQualifierName(columnTo(column))), CompareOperator.EQUAL, new NullComparator()));
         return this;
     }
 
     @Override
     public ChainCompare<R> notNull(R column) {
-        filters.add(new SingleColumnValueFilter(Bytes.toBytes(getFamily()), Bytes.toBytes(columnTo(column)), CompareOperator.NOT_EQUAL, new NullComparator()));
+        filters.add(new SingleColumnValueFilter(Bytes.toBytes(getFamily()), Bytes.toBytes(EntityUtils.analyQualifierName(columnTo(column))), CompareOperator.NOT_EQUAL, new NullComparator()));
         return this;
     }
 

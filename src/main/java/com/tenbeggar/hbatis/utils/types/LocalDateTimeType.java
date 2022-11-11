@@ -15,7 +15,7 @@ public class LocalDateTimeType implements JavaType<LocalDateTime> {
 
     @Override
     public boolean match(Field field) {
-        return LocalDateTime.class.getTypeName().contentEquals(field.getGenericType().getTypeName());
+        return LocalDateTime.class.getTypeName().equals(field.getGenericType().getTypeName());
     }
 
     @Override

@@ -9,7 +9,7 @@ public class LongType implements JavaType<Long> {
 
     @Override
     public boolean match(Field field) {
-        return Long.class.getTypeName().contentEquals(field.getGenericType().getTypeName());
+        return Long.class.getTypeName().equals(field.getGenericType().getTypeName());
     }
 
     @Override

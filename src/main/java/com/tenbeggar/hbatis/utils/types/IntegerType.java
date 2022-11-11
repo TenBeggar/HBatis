@@ -9,7 +9,7 @@ public class IntegerType implements JavaType<Integer> {
 
     @Override
     public boolean match(Field field) {
-        return Integer.class.getTypeName().contentEquals(field.getGenericType().getTypeName());
+        return Integer.class.getTypeName().equals(field.getGenericType().getTypeName());
     }
 
     @Override

@@ -9,7 +9,7 @@ public class DoubleType implements JavaType<Double> {
 
     @Override
     public boolean match(Field field) {
-        return Double.class.getTypeName().contentEquals(field.getGenericType().getTypeName());
+        return Double.class.getTypeName().equals(field.getGenericType().getTypeName());
     }
 
     @Override

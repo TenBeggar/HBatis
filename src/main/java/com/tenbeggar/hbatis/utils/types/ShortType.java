@@ -9,7 +9,7 @@ public class ShortType implements JavaType<Short> {
 
     @Override
     public boolean match(Field field) {
-        return Short.class.getTypeName().contentEquals(field.getGenericType().getTypeName());
+        return Short.class.getTypeName().equals(field.getGenericType().getTypeName());
     }
 
     @Override

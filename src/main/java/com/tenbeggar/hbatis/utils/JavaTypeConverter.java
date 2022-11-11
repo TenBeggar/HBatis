@@ -14,6 +14,7 @@ import java.util.Collection;
 @Import({
         StringType.class,
         LocalDateTimeType.class,
+        EnumType.class,
         LongType.class,
         IntegerType.class,
         DoubleType.class,

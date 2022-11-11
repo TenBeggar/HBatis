@@ -9,7 +9,7 @@ public class BooleanType implements JavaType<Boolean> {
 
     @Override
     public boolean match(Field field) {
-        return Boolean.class.getTypeName().contentEquals(field.getGenericType().getTypeName());
+        return Boolean.class.getTypeName().equals(field.getGenericType().getTypeName());
     }
 
     @Override

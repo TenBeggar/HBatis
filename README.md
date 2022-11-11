@@ -90,10 +90,8 @@ public class UserService extends HBaseAbstractService<UserMapper, User> {
 
 ## 后续规划
 
-1. 支持枚举
+1. socket 链接池
 
-2. socket 链接池
+2. 支持缓存
 
-3. 支持缓存
-
-4. 支持拦截器
+3. 支持拦截器

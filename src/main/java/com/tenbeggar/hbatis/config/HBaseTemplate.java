@@ -16,6 +16,8 @@ import java.io.IOException;
 @Import(HBaseProperties.class)
 public class HBaseTemplate {
 
+    private static final String HBATIS_V = "2.4.12";
+
     @Autowired
     private HBaseProperties hbaseProperties;
 
@@ -33,6 +35,16 @@ public class HBaseTemplate {
         this.connection = this.connection(this.configuration);
         this.aggregationClient = this.aggregationClient(this.configuration);
         this.admin = this.admin(this.connection);
+        System.out.print(
+                "*=====================================*\n" +
+                        " |     |-----|              *  |-----|\n" +
+                        " |     |     |        |     |  |      \n" +
+                        " |-----|-----|-----|--|--|  |  |-----|\n" +
+                        " |     |     |     |  |     |        |\n" +
+                        " |     |-----|-----|  |__|  |  |-----|\n" +
+                        "*=====================================*\n" +
+                        "                        HBatis v+" + HBATIS_V + "+\n"
+        );
     }
 
     public Configuration configuration(HBaseProperties hbaseProperties) {

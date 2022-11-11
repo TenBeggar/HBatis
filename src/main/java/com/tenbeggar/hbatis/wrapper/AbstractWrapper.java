@@ -12,6 +12,7 @@ import com.tenbeggar.hbatis.utils.Page;
 import com.tenbeggar.hbatis.utils.Pageable;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.lang.reflect.Proxy;
 import java.util.List;
 import java.util.function.Consumer;
@@ -40,12 +41,16 @@ public abstract class AbstractWrapper<T, R, Children extends AbstractWrapper<T, 
     }
 
 
-    protected abstract String columnTo(R column);
+    protected abstract Field columnToField(R column);
 
 
     public Class<T> currentEntityClass(HBaseMapper<T> hbaseMapper) {
         MapperInvocationHandler mapperInvocationHandler = (MapperInvocationHandler) Proxy.getInvocationHandler(hbaseMapper);
         return mapperInvocationHandler.getEntityClass();
+    }
+
+    public Class<T> getEntityClass() {
+        return entityClass;
     }
 
     @Override
@@ -290,8 +295,8 @@ public abstract class AbstractWrapper<T, R, Children extends AbstractWrapper<T, 
         }
 
         @Override
-        protected String columnTo(R column) {
-            return AbstractWrapper.this.columnTo(column);
+        protected Field columnTo(R column) {
+            return AbstractWrapper.this.columnToField(column);
         }
     }
 }

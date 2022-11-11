@@ -1,8 +1,9 @@
 package com.tenbeggar.hbatis.wrapper;
 
 import com.tenbeggar.hbatis.mapper.HBaseMapper;
-import com.tenbeggar.hbatis.utils.EntityUtils;
 import com.tenbeggar.hbatis.utils.LambdaUtils;
+
+import java.lang.reflect.Field;
 
 public class LambdaQueryWrapper<T> extends AbstractWrapper<T, SFunction<T, ?>, LambdaQueryWrapper<T>> {
 
@@ -11,7 +12,7 @@ public class LambdaQueryWrapper<T> extends AbstractWrapper<T, SFunction<T, ?>, L
     }
 
     @Override
-    public String columnTo(SFunction<T, ?> column) {
-        return EntityUtils.analyQualifierName(LambdaUtils.convertToField(column));
+    public Field columnToField(SFunction<T, ?> column) {
+        return LambdaUtils.convertToField(column);
     }
 }

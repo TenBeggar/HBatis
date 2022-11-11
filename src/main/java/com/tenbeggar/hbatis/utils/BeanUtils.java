@@ -111,14 +111,17 @@ public class BeanUtils {
     }
 
     public static byte[] serializableId(Class<?> clazz, Object id) {
-        Field field = EntityUtils.findRowKeyField(clazz);
-        return JavaTypeConverter.serializable(field, id);
+        return serializable(EntityUtils.findRowKeyField(clazz), id);
     }
 
     public static List<byte[]> serializableIds(Class<?> clazz, Iterable<Object> ids) {
         Field field = EntityUtils.findRowKeyField(clazz);
         List<byte[]> list = new ArrayList<>();
-        ids.forEach(e -> list.add(JavaTypeConverter.serializable(field, e)));
+        ids.forEach(e -> list.add(serializable(field, e)));
         return list;
+    }
+
+    public static byte[] serializable(Field field, Object obj) {
+        return JavaTypeConverter.serializable(field, obj);
     }
 }
